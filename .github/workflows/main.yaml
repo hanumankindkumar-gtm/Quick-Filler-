@@ -1,37 +1,42 @@
-name: Build Android APK
+name: Build QuickFill APK
 
 on:
   push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Source Code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '17'
+      - name: Unzip project if it was uploaded as a single zip
+        run: |
+          if [ -f QuickFill-source.zip ]; then
+            unzip -o QuickFill-source.zip
+          fi
+          ls -la
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Grant Execute Permission to Gradlew
-      run: chmod +x gradlew
+      - name: Generate Gradle wrapper
+        working-directory: QuickFill
+        run: gradle wrapper --gradle-version 8.7
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      - name: Make gradlew executable
+        working-directory: QuickFill
+        run: chmod +x gradlew
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: my-android-app
-        path: app/build/outputs/apk/debug/app-debug.apk
-        
+      - name: Build debug APK
+        working-directory: QuickFill
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickFill-debug-apk
+          path: QuickFill/app/build/outputs/apk/debug/app-debug.apk
